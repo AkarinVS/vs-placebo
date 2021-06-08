@@ -7,7 +7,6 @@
 #include <stdbool.h>
 #include <libplacebo/dispatch.h>
 #include <libplacebo/utils/upload.h>
-#include <libplacebo/vulkan.h>
 #include "libp2p/p2p_api.h"
 #include <pthread.h>
 

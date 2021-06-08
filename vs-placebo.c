@@ -10,7 +10,6 @@
 
 #include <libplacebo/dispatch.h>
 #include <libplacebo/utils/upload.h>
-#include <libplacebo/vulkan.h>
 
 #include "vs-placebo.h"
 
@@ -32,6 +31,7 @@ void *init(void) {
         goto error;
     }
 
+#ifdef PL_HAVE_VULKAN
     struct pl_vulkan_params vp = pl_vulkan_default_params;
     struct pl_vk_inst_params ip = pl_vk_inst_default_params;
 //    ip.debug = true;
@@ -45,6 +45,21 @@ void *init(void) {
 
     // Give this a shorter name for convenience
     p->gpu = p->vk->gpu;
+#elif defined(PL_HAVE_OPENGL)
+    struct pl_opengl_params gp = pl_opengl_default_params;
+    gp.allow_software = true;
+    gp.debug = true;
+
+    p->gl = pl_opengl_create(p->ctx, &gp);
+    if (!p->gl) {
+	    fprintf(stderr, "Failed creating opengl context\n");
+	    goto error;
+    }
+
+    p->gpu = p->gl->gpu;
+#else
+#error "unknown libplacebo gpu backend."
+#endif
 
     p->dp = pl_dispatch_create(p->ctx, p->gpu);
     if (!p->dp) {
@@ -76,7 +91,11 @@ void uninit(void *priv)
     pl_renderer_destroy(&p->rr);
     pl_shader_obj_destroy(&p->dither_state);
     pl_dispatch_destroy(&p->dp);
+#if defined(PL_HAVE_VULKAN)
     pl_vulkan_destroy(&p->vk);
+#elif defined(PL_HAVE_OPENGL)
+    pl_opengl_destroy(&p->gl);
+#endif
     pl_context_destroy(&p->ctx);
 
     free(p);

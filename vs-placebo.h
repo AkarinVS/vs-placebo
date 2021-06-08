@@ -1,10 +1,17 @@
 #ifndef VS_PLACEBO_LIBRARY_H
 #define VS_PLACEBO_LIBRARY_H
 
+#include <libplacebo/config.h>
 #include <libplacebo/dispatch.h>
 #include <libplacebo/shaders/sampling.h>
 #include <libplacebo/utils/upload.h>
+#if defined(PL_HAVE_VULKAN)
 #include <libplacebo/vulkan.h>
+#elif defined(PL_HAVE_OPENGL)
+#include <libplacebo/opengl.h>
+#else
+#error "libplacebo does not have either vulkan or opengl backend."
+#endif
 
 struct format {
     int num_comps;
@@ -28,7 +35,11 @@ struct image {
 
 struct priv {
     struct pl_context *ctx;
+#if defined(PL_HAVE_VULKAN)
     const struct pl_vulkan *vk;
+#elif defined(PL_HAVE_OPENGL)
+    const struct pl_opengl *gl;
+#endif
     const struct pl_gpu *gpu;
     struct pl_dispatch *dp;
     struct pl_shader_obj *dither_state;
