@@ -13,6 +13,50 @@
 
 #include "vs-placebo.h"
 
+#if defined(__APPLE__) && defined(PL_HAVE_OPENGL) && !defined(PL_HAVE_VULKAN)
+#define GL_SILENCE_DEPRECATION
+#include <OpenGL/OpenGL.h>
+#include <OpenGL/GL.h>
+
+static CGLContextObj gl_context;
+void init_gl() {
+	CGLPixelFormatAttribute attributes[4] = {
+		kCGLPFAAccelerated,
+		kCGLPFAOpenGLProfile,
+		(CGLPixelFormatAttribute) kCGLOGLPVersion_3_2_Core,
+		(CGLPixelFormatAttribute) 0
+	};
+	CGLPixelFormatObj pix;
+	CGLError errorCode;
+	GLint num; // the number of possible pixel formats
+	errorCode = CGLChoosePixelFormat( attributes, &pix, &num );
+	if (errorCode != 0) {
+		abort();
+	}
+	errorCode = CGLCreateContext(pix, NULL, &gl_context);
+	if (errorCode != 0) {
+		abort();
+	}
+	CGLDestroyPixelFormat(pix);
+
+	errorCode = CGLSetCurrentContext(gl_context);
+	if (errorCode != 0) {
+		abort();
+	}
+
+	//fprintf(stderr, "init version: %s\n", glGetString(GL_VERSION));
+}
+
+void fini_gl() {
+	//fprintf(stderr, "fini version: %s\n", glGetString(GL_VERSION));
+	CGLSetCurrentContext(NULL);
+	CGLDestroyContext(gl_context);
+}
+#else
+inline void init_gl() {}
+inline void fini_gl() {}
+#endif
+
 void logging(void *log_priv, enum pl_log_level level, const char *msg) {
     printf("%s\n", msg);
 }
@@ -46,6 +90,7 @@ void *init(void) {
     // Give this a shorter name for convenience
     p->gpu = p->vk->gpu;
 #elif defined(PL_HAVE_OPENGL)
+    init_gl();
     struct pl_opengl_params gp = pl_opengl_default_params;
     gp.allow_software = true;
     gp.debug = true;
@@ -56,6 +101,7 @@ void *init(void) {
 	    goto error;
     }
 
+    fini_gl();
     p->gpu = p->gl->gpu;
 #else
 #error "unknown libplacebo gpu backend."
@@ -95,6 +141,7 @@ void uninit(void *priv)
     pl_vulkan_destroy(&p->vk);
 #elif defined(PL_HAVE_OPENGL)
     pl_opengl_destroy(&p->gl);
+    fini_gl();
 #endif
     pl_context_destroy(&p->ctx);
 

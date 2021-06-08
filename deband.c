@@ -175,8 +175,10 @@ static const VSFrameRef *VS_CC DebandGetFrame(int n, int activationReason, void 
                         .component_map[0] = 0,
                 };
                 pthread_mutex_lock(&d->lock); // libplacebo isn’t thread-safe
+                init_gl();
                 if (reconfig(d->vf, &plane, vsapi))
                     filter(d->vf, vsapi->getWritePtr(dst, i), &plane, d, vsapi, i != 0);
+                fini_gl();
                 pthread_mutex_unlock(&d->lock);
             }
         }

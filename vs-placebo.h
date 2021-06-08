@@ -51,4 +51,8 @@ struct priv {
 void *init(void);
 void uninit(void *priv);
 
+// dirty hack for single threaded OpenGL.
+void init_gl(void);
+void fini_gl(void);
+
 #endif //VS_PLACEBO_LIBRARY_H
